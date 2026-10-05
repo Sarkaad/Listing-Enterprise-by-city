@@ -45,7 +45,7 @@ async function loadBusinesses(city) {
     statusEl.textContent = `${result.businesses.length} entreprises trouvées (${result.requests} requêtes)` +
       (result.truncated ? " — résultat incomplet (limite atteinte)" : "");
     console.log(result.businesses);
-    // Affichage de la liste : étape suivante.
+    renderBusinesses(resultsEl, result.businesses);
   } catch (e) {
     if (token === loadToken) statusEl.textContent = `Erreur de recherche : ${e.message}`;
   }
