@@ -1,4 +1,4 @@
-// Liste intégrée (étape 2). Sera remplacée par Google Places Autocomplete quand la clé sera branchée.
+// Liste de secours, utilisée seulement quand config.js est absent (pas de Google).
 const CITIES = [
   { name: "Paris", region: "Île-de-France", country: "France", lat: 48.8566, lng: 2.3522 },
   { name: "Marseille", region: "Provence-Alpes-Côte d'Azur", country: "France", lat: 43.2965, lng: 5.3698 },
