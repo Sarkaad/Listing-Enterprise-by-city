@@ -37,7 +37,9 @@ async function loadBusinesses(city) {
   }
   try {
     const result = await listBusinesses(PlaceClass, city.box, p => {
-      if (token === loadToken) statusEl.textContent = `Recherche… ${p.found} entreprises (${p.requests} requêtes)`;
+      if (token === loadToken) statusEl.textContent = p.waiting
+        ? `Quota Google atteint, reprise dans ${p.waiting} s… (${p.found} entreprises déjà trouvées)`
+        : `Recherche… ${p.found} entreprises (${p.requests} requêtes)`;
     });
     if (token !== loadToken) return;
     statusEl.textContent = `${result.businesses.length} entreprises trouvées (${result.requests} requêtes)` +

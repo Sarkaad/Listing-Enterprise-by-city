@@ -5,7 +5,12 @@ const MAX_PER_QUERY = 20;
 const INITIAL_GRID = 3;
 const MAX_DEPTH = 5;
 const MAX_REQUESTS = 10000; // garde-fou technique, pas un plafond de coût
-const BATCH_SIZE = 6;
+const BATCH_SIZE = 3;
+const BATCH_DELAY_MS = 500;
+const MAX_RETRIES = 6;
+
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const isQuotaError = e => /RESOURCE_EXHAUSTED|Quota exceeded/i.test(e?.message ?? "");
 
 function distanceMeters(lat1, lng1, lat2, lng2) {
   const toRad = d => (d * Math.PI) / 180;
@@ -34,7 +39,20 @@ function inside(box, lat, lng) {
   return lat >= box.south && lat <= box.north && lng >= box.west && lng <= box.east;
 }
 
-async function searchCell(Place, cell) {
+async function searchCell(Place, cell, onWait) {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await searchCellOnce(Place, cell);
+    } catch (e) {
+      if (!isQuotaError(e) || attempt >= MAX_RETRIES) throw e;
+      const seconds = 10 * 2 ** attempt; // quota par minute dépassé : on attend puis on réessaie
+      for (let s = seconds; s > 0; s--) { onWait(s); await sleep(1000); }
+      onWait(0);
+    }
+  }
+}
+
+async function searchCellOnce(Place, cell) {
   const lat = (cell.north + cell.south) / 2;
   const lng = (cell.east + cell.west) / 2;
   const radius = Math.min(50000, distanceMeters(lat, lng, cell.north, cell.east));
@@ -58,7 +76,7 @@ async function listBusinesses(Place, box, onProgress = () => {}) {
     const results = await Promise.all(batch.map(async cell => {
       if (requests >= MAX_REQUESTS) { truncated = true; return null; }
       requests++;
-      return { cell, places: await searchCell(Place, cell) };
+      return { cell, places: await searchCell(Place, cell, waiting => onProgress({ requests, found: found.size, waiting })) };
     }));
 
     for (const r of results) {
@@ -75,6 +93,7 @@ async function listBusinesses(Place, box, onProgress = () => {}) {
       }
     }
     onProgress({ requests, found: found.size });
+    await sleep(BATCH_DELAY_MS);
   }
   return { businesses: [...found.values()], requests, truncated };
 }
