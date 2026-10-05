@@ -42,9 +42,9 @@ cityInput.addEventListener("input", () => {
 // Mode Google : actif seulement si config.js définit GOOGLE_MAPS_API_KEY.
 async function initGoogleAutocomplete(key) {
   await new Promise((resolve, reject) => {
+    window.__gmapsReady = resolve;
     const s = document.createElement("script");
-    s.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(key)}&loading=async&v=weekly`;
-    s.onload = resolve;
+    s.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(key)}&loading=async&libraries=places&v=weekly&callback=__gmapsReady`;
     s.onerror = () => reject(new Error("Chargement de Google Maps impossible."));
     document.head.append(s);
   });
