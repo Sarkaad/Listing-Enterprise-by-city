@@ -1,33 +1,40 @@
-// Étape 1 : données factices. Sera remplacé par la délimitation Google + recherche Places.
-const FAKE_DATA = {
-  Paris: [
-    { name: "Boulangerie Exemple", address: "1 rue de Rivoli" },
-    { name: "Cabinet Démo", address: "10 avenue des Champs-Élysées" },
-  ],
-  Lyon: [
-    { name: "Atelier Test", address: "5 place Bellecour" },
-  ],
-};
-
-const citySelect = document.getElementById("city");
-const countEl = document.getElementById("count");
+const cityInput = document.getElementById("city");
+const optionsEl = document.getElementById("city-options");
+const errorEl = document.getElementById("error");
+const selectedEl = document.getElementById("selected");
+const selectedName = document.getElementById("selected-name");
+const selectedDetail = document.getElementById("selected-detail");
 const resultsEl = document.getElementById("results");
 
-for (const city of Object.keys(FAKE_DATA)) {
-  citySelect.add(new Option(city, city));
+const label = c => `${c.name}, ${c.country}`;
+
+for (const c of CITIES) {
+  optionsEl.append(new Option(label(c), label(c)));
 }
 
-citySelect.addEventListener("change", () => {
-  const businesses = FAKE_DATA[citySelect.value] || [];
+let selectedCity = null;
+
+function selectCity(city) {
+  selectedCity = city;
   resultsEl.replaceChildren();
-  countEl.hidden = !citySelect.value;
-  countEl.textContent = `${businesses.length} entreprise(s)`;
-  for (const b of businesses) {
-    const li = document.createElement("li");
-    li.textContent = b.name;
-    const small = document.createElement("small");
-    small.textContent = b.address;
-    li.append(small);
-    resultsEl.append(li);
+  selectedEl.hidden = !city;
+  if (!city) return;
+  selectedName.textContent = city.name;
+  selectedDetail.textContent = `${city.region}, ${city.country} · ${city.lat.toFixed(4)}, ${city.lng.toFixed(4)}`;
+  // Étapes suivantes : délimitation de la ville, puis recherche des entreprises.
+}
+
+cityInput.addEventListener("input", () => {
+  const value = cityInput.value.trim().toLowerCase();
+  const match = CITIES.find(c => label(c).toLowerCase() === value);
+  errorEl.hidden = true;
+  if (match) {
+    selectCity(match);
+  } else {
+    selectCity(null);
+    if (value.length > 2 && !CITIES.some(c => label(c).toLowerCase().includes(value))) {
+      errorEl.textContent = "Ville inconnue. Choisissez une ville dans la liste.";
+      errorEl.hidden = false;
+    }
   }
 });

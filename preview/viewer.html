@@ -18,7 +18,7 @@
   pre { margin:0; padding:12px; background:var(--code-bg); color:var(--code-fg); border-radius:8px; overflow-x:auto; font:12.5px/1.5 ui-monospace,Menlo,monospace; }
 </style>
 <div class="wrap">
-  <header><h1>Listing Entreprises</h1><span class="step">Étape 1 : squelette, données factices</span></header>
+  <header><h1>Listing Entreprises</h1><span class="step">Étape 2 : sélection de la ville</span></header>
   <nav>
     <button id="t-render" aria-pressed="true">Rendu</button>
     <button id="t-code" aria-pressed="false">Code</button>
@@ -27,7 +27,7 @@
   <section id="code" hidden></section>
 </div>
 <script>
-  const files = ["app/index.html", "app/style.css", "app/app.js"];
+  const files = ["app/index.html", "app/style.css", "app/cities.js", "app/app.js"];
   const $ = id => document.getElementById(id);
   function show(tab) {
     $("render").hidden = tab !== "render"; $("code").hidden = tab !== "code";
