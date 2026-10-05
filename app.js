@@ -5,6 +5,9 @@ const selectedEl = document.getElementById("selected");
 const selectedName = document.getElementById("selected-name");
 const selectedDetail = document.getElementById("selected-detail");
 const resultsEl = document.getElementById("results");
+const statusEl = document.getElementById("status");
+
+let PlaceClass = null; // défini en mode Google
 
 const label = c => `${c.name}, ${c.country}`;
 
@@ -21,7 +24,29 @@ function selectCity(city) {
   if (!city) return;
   selectedName.textContent = city.name;
   selectedDetail.textContent = `${city.region}, ${city.country} · ${city.lat.toFixed(4)}, ${city.lng.toFixed(4)}`;
-  // Étapes suivantes : délimitation de la ville, puis recherche des entreprises.
+  loadBusinesses(city);
+}
+
+let loadToken = 0;
+async function loadBusinesses(city) {
+  const token = ++loadToken;
+  statusEl.hidden = false;
+  if (!PlaceClass || !city.box) {
+    statusEl.textContent = "Recherche des entreprises disponible en mode Google uniquement.";
+    return;
+  }
+  try {
+    const result = await listBusinesses(PlaceClass, city.box, p => {
+      if (token === loadToken) statusEl.textContent = `Recherche… ${p.found} entreprises (${p.requests} requêtes)`;
+    });
+    if (token !== loadToken) return;
+    statusEl.textContent = `${result.businesses.length} entreprises trouvées (${result.requests} requêtes)` +
+      (result.truncated ? " — résultat incomplet (limite atteinte)" : "");
+    console.log(result.businesses);
+    // Affichage de la liste : étape suivante.
+  } catch (e) {
+    if (token === loadToken) statusEl.textContent = `Erreur de recherche : ${e.message}`;
+  }
 }
 
 cityInput.addEventListener("input", () => {
@@ -48,7 +73,8 @@ async function initGoogleAutocomplete(key) {
     s.onerror = () => reject(new Error("Chargement de Google Maps impossible."));
     document.head.append(s);
   });
-  const { PlaceAutocompleteElement } = await google.maps.importLibrary("places");
+  const { PlaceAutocompleteElement, Place } = await google.maps.importLibrary("places");
+  PlaceClass = Place;
   const ac = new PlaceAutocompleteElement({ includedPrimaryTypes: ["locality"] });
   const box = document.getElementById("google-autocomplete");
   box.append(ac);
@@ -58,7 +84,7 @@ async function initGoogleAutocomplete(key) {
 
   ac.addEventListener("gmp-select", async ({ placePrediction }) => {
     const place = placePrediction.toPlace();
-    await place.fetchFields({ fields: ["displayName", "location", "addressComponents"] });
+    await place.fetchFields({ fields: ["displayName", "location", "addressComponents", "viewport"] });
     const part = type => place.addressComponents?.find(c => c.types.includes(type))?.longText ?? "";
     selectCity({
       name: place.displayName,
@@ -66,6 +92,7 @@ async function initGoogleAutocomplete(key) {
       country: part("country"),
       lat: place.location.lat(),
       lng: place.location.lng(),
+      box: toBox(place),
     });
   });
 }
@@ -75,4 +102,14 @@ if (window.GOOGLE_MAPS_API_KEY) {
     errorEl.textContent = `${e.message} Liste intégrée utilisée à la place.`;
     errorEl.hidden = false;
   });
+}
+
+// Zone de recherche : viewport Google de la ville, sinon carré de ~11 km autour du centre.
+function toBox(place) {
+  const v = place.viewport;
+  if (v) {
+    return { south: v.getSouthWest().lat(), west: v.getSouthWest().lng(), north: v.getNorthEast().lat(), east: v.getNorthEast().lng() };
+  }
+  const lat = place.location.lat(), lng = place.location.lng();
+  return { south: lat - 0.05, north: lat + 0.05, west: lng - 0.05, east: lng + 0.05 };
 }
