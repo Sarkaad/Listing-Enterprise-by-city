@@ -2,6 +2,7 @@
 // Places API (New) renvoie au plus 20 résultats par requête : on découpe la zone en cellules
 // et on subdivise toute cellule saturée (20 résultats), jusqu'à MAX_DEPTH.
 const MAX_PER_QUERY = 20;
+const MAX_BUSINESSES = 100; // on s'arrête dès que 100 entreprises sont trouvées
 const INITIAL_GRID = 3;
 const MAX_DEPTH = 5;
 const MAX_REQUESTS = 10000; // garde-fou technique, pas un plafond de coût
@@ -71,7 +72,7 @@ async function listBusinesses(Place, box, onProgress = () => {}) {
   let requests = 0;
   let truncated = false;
 
-  while (queue.length) {
+  while (queue.length && found.size < MAX_BUSINESSES) {
     const batch = queue.splice(0, BATCH_SIZE);
     const results = await Promise.all(batch.map(async cell => {
       if (requests >= MAX_REQUESTS) { truncated = true; return null; }
@@ -95,5 +96,6 @@ async function listBusinesses(Place, box, onProgress = () => {}) {
     onProgress({ requests, found: found.size });
     await sleep(BATCH_DELAY_MS);
   }
-  return { businesses: [...found.values()], requests, truncated };
+  const all = [...found.values()];
+  return { businesses: all.slice(0, MAX_BUSINESSES), requests, truncated: truncated && all.length < MAX_BUSINESSES };
 }
