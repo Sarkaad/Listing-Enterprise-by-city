@@ -1,10 +1,10 @@
 // Liste les entreprises dans une zone rectangulaire (viewport Google de la ville).
 // Places API (New) renvoie au plus 20 résultats par requête : on découpe la zone en cellules
-// et on subdivise toute cellule saturée (20 résultats), jusqu'à MAX_DEPTH. Chaque requête est facturée par Google : MAX_REQUESTS plafonne le coût.
+// et on subdivise toute cellule saturée (20 résultats), jusqu'à MAX_DEPTH.
 const MAX_PER_QUERY = 20;
 const INITIAL_GRID = 3;
 const MAX_DEPTH = 5;
-const MAX_REQUESTS = 1000;
+const MAX_REQUESTS = 10000; // garde-fou technique, pas un plafond de coût
 const BATCH_SIZE = 6;
 
 function distanceMeters(lat1, lng1, lat2, lng2) {
